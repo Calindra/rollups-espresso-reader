@@ -173,11 +173,7 @@ jobs:
           CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
           CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
         run: |
-          docker run -d --env-file env.nodev2-sepolia-no-reader \
-            -e CARTESI_AUTH_MNEMONIC=$CARTESI_AUTH_MNEMONIC \
-            -e CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=$CARTESI_BLOCKCHAIN_HTTP_ENDPOINT \
-            -e CARTESI_BLOCKCHAIN_WS_ENDPOINT=$CARTESI_BLOCKCHAIN_WS_ENDPOINT \
-            --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
+          docker run -d --env-file env.nodev2-sepolia-no-reader -e CARTESI_AUTH_MNEMONIC=$CARTESI_AUTH_MNEMONIC -e CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=$CARTESI_BLOCKCHAIN_HTTP_ENDPOINT -e CARTESI_BLOCKCHAIN_WS_ENDPOINT=$CARTESI_BLOCKCHAIN_WS_ENDPOINT --rm --network=host -v ./rollups-node:/var/lib/cartesi-rollups-node/src --name c_espresso espresso
 
       - name: Run unit tests
         env:
