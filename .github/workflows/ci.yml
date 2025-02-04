@@ -173,11 +173,13 @@ jobs:
           CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
           CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
           CARTESI_BLOCKCHAIN_WS_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_WS_ENDPOINT }}
+          CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5433/rollupsdb?sslmode=disable'
         run: |
           docker run -d --env-file ./ci/env.nodev2-sepolia-no-reader \
             -e CARTESI_AUTH_MNEMONIC="$CARTESI_AUTH_MNEMONIC" \
             -e CARTESI_BLOCKCHAIN_HTTP_ENDPOINT=$CARTESI_BLOCKCHAIN_HTTP_ENDPOINT \
             -e CARTESI_BLOCKCHAIN_WS_ENDPOINT=$CARTESI_BLOCKCHAIN_WS_ENDPOINT \
+            -e CARTESI_POSTGRES_ENDPOINT=$CARTESI_POSTGRES_ENDPOINT \
             --rm --network=host \
             --name c_espresso espresso
 
