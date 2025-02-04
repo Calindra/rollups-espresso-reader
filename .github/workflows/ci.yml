@@ -117,7 +117,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: rollupsdb
-        options: --name postgres
+        options: --name postgres -p 5433:5433
     
     steps:
       - name: Checkout code
@@ -132,6 +132,7 @@ jobs:
 
       - name: Restore DB bindings
         run: |
+          docker ps
           mkdir -p internal/repository/postgres/db/
           tar -xzf rollupsdb-postgres-bindings.tar.gz
 
