@@ -112,12 +112,12 @@ jobs:
       postgres:
         image: postgres:16
         ports:
-          - 5433:5433 # Warn: I changed it to not crash with internal espresso-dev-ode
+          - 5433:5432 # Warn: I changed it to not crash with internal espresso-dev-ode
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: rollupsdb
-        options: --name postgres -p 5433:5433
+        options: --name postgres
     
     steps:
       - name: Checkout code
