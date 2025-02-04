@@ -152,7 +152,7 @@ jobs:
         env:
           PGPASSWORD: password
         run: |
-          psql -h localhost -U postgres -d rollupsdb < rollupsdb-dump.sql
+          psql -h localhost -U postgres -d rollupsdb --port 5433 < rollupsdb-dump.sql
 
       - name: Download Docker image
         uses: actions/download-artifact@v4
