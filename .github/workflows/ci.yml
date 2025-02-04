@@ -125,6 +125,10 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Run Espresso dev node
+        run: |
+          docker run -d --network=host -e ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/ -e ESPRESSO_SEQUENCER_API_PORT=24000 ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch4 --name espresso-dev-node
+
       - name: Download DB files
         uses: actions/download-artifact@v4
         with:
@@ -168,7 +172,7 @@ jobs:
         run: |
           docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
 
-      - name: Run Espresso image (Default input disabled)
+      - name: Run Espresso Reader image (Default input disabled)
         env:
           CARTESI_AUTH_MNEMONIC: ${{ secrets.CARTESI_AUTH_MNEMONIC }}
           CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: ${{ secrets.CARTESI_BLOCKCHAIN_HTTP_ENDPOINT }}
