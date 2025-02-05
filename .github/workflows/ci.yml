@@ -194,6 +194,7 @@ jobs:
           ESPRESSO_NAMESPACE: '55555'
           ESPRESSO_SERVICE_ENDPOINT: '0.0.0.0:8080'
         run: |
+          export $(cat ./ci/env.nodev2-espressolocal | grep -v '^#') 
           go test --timeout 1m -p 1 ./...
 
   integration_test:
