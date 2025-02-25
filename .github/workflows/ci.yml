@@ -157,7 +157,8 @@ jobs:
       - name: Run Espresso dev node
         run: |
           docker run -d --network=host -e ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/ -e ESPRESSO_SEQUENCER_API_PORT=24000 ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6 --name espresso-dev-node
-
+          sleep 10
+          docker logs --timestamps espresso-dev-node
       - name: Download DB files
         uses: actions/download-artifact@v4
         with:
@@ -249,6 +250,9 @@ jobs:
           APP_ADDRESS=0x36B9E60ACb181da458aa8870646395CD27cD0E6E node index.js || true
           sleep 10
           docker logs --timestamps c_espresso
+
+      - name: Espresso dev node logs
+        run: docker logs --timestamps espresso-dev-node
 
       - name: Query Database for Output
         run: |
