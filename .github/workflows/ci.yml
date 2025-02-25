@@ -78,9 +78,9 @@ jobs:
       
       - name: Migrate Espresso DB
         run: |
-          migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_POSTGRES_ENDPOINT" up
+          # migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_POSTGRES_ENDPOINT" up
           eval $(make env)
-          # make migrate
+          make migrate
           make generate-db
 
       - name: Deps and Cartesi Machine
