@@ -9,7 +9,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-
+    env:
+      CARTESI_POSTGRES_ENDPOINT: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
     services:
       postgres:
         image: postgres:16
@@ -42,6 +43,32 @@ jobs:
           echo "PostgreSQL did not become ready in time";
           exit 1;
 
+      - name: Install go migrate cli
+        run: |
+          ARCH=$(dpkg --print-architecture || uname -m)
+          case "$ARCH" in
+              amd64|x86_64)
+                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-amd64.deb"
+                  ;;
+              arm64|aarch64)
+                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-arm64.deb"
+                  ;;
+              armhf|armv7l)
+                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-armv7.deb"
+                  ;;
+              i386)
+                  MIGRATE_URL="https://github.com/golang-migrate/migrate/releases/download/v${GO_MIGRATE_VERSION}/migrate.linux-386.deb"
+                  ;;
+              *)
+                  echo "Unsupported architecture: $ARCH"
+                  exit 1
+                  ;;
+          esac
+          curl -fsSL "$MIGRATE_URL" -o /tmp/migrate.deb
+          dpkg -i /tmp/migrate.deb
+          rm /tmp/migrate.deb
+          migrate --version
+
       - name: Migrate Node V2 DB
         run: |
           cd rollups-node
@@ -50,8 +77,9 @@ jobs:
       
       - name: Migrate Espresso DB
         run: |
+          migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_POSTGRES_ENDPOINT" up
           eval $(make env)
-          make migrate
+          # make migrate
           make generate-db
 
       - name: Deps and Cartesi Machine
