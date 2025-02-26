@@ -156,7 +156,7 @@ jobs:
 
       - name: Run Espresso dev node
         run: |
-          docker run --network=host -e ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/ -e ESPRESSO_SEQUENCER_API_PORT=24000 ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6 --name espresso-dev-node
+          docker run --network=host -e ESPRESSO_SEQUENCER_L1_PROVIDER=http://localhost:8545/ -e ESPRESSO_SEQUENCER_API_PORT=24000 --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
           # sleep 10
           # docker logs --timestamps espresso-dev-node
       - name: Download DB files
