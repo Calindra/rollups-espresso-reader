@@ -255,6 +255,9 @@ jobs:
       - name: Espresso dev node logs
         run: docker logs --timestamps espresso-dev-node
 
+      - name: Espresso dev node debug hotshot.header
+        run: docker exec -i espresso-dev-node psql -U root -d root -t -c "SELECT height, timestamp FROM hotshot.header ORDER BY height;"
+
       - name: Query Database for Output
         run: |
           MAX_RETRIES=30
