@@ -106,12 +106,12 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 
 	suite.ctx = context.Background()
 	suite.c = config.FromEnv()
-	suite.database, _ = factory.NewRepositoryFromConnectionString(suite.ctx, suite.c.PostgresEndpoint.Value)
-	// _, err := suite.database.CreateApplication(suite.ctx, &suite.application)
-	// if err != nil {
-	// 	slog.Error("create application", "error", err)
-	// }
-	// suite.Nil(err)
+	suite.database, _ = factory.NewRepositoryFromConnectionString(suite.ctx, suite.c.DatabaseConnection.Value)
+	_, err := suite.database.CreateApplication(suite.ctx, &suite.application)
+	if err != nil {
+		slog.Error("create application", "error", err)
+	}
+	suite.Nil(err)
 
 	config, err := repository.LoadNodeConfig[evmreader.PersistentConfig](suite.ctx, suite.database, evmreader.EvmReaderConfigKey)
 	if err != nil {
