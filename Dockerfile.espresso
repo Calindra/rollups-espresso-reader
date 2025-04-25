@@ -1,0 +1,46 @@
+# Build stage for espresso
+ARG TARGETARCH=amd64
+FROM ubuntu:24.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install build dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    git build-essential golang curl postgresql-client dpkg ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Copy source code
+COPY . .
+
+# Prepare database migrations & bindings
+RUN eval $(make env) \
+    && make migrate \
+    && make generate-db
+
+# Build espresso binary (assuming cmd/espresso)
+RUN go build -o espresso ./cmd/espresso
+
+# Runtime stage
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    ca-certificates libboost-all-dev lua5.4 libslirp0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy binary and migrations
+COPY --from=builder /workspace/espresso /usr/local/bin/espresso
+COPY --from=builder /workspace/internal/repository/postgres/db /app/db
+
+# Expose ports for API and Sequencer
+EXPOSE 24000
+EXPOSE 8080
+
+ENTRYPOINT ["espresso"]

@@ -1,0 +1,52 @@
+# Build stage for rollups-node-devnet
+ARG TARGETARCH=amd64
+ARG CARTESI_MACHINE_VERSION=0.19.0
+FROM ubuntu:24.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install build dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    git build-essential libboost-all-dev lua5.4 libslirp0 curl dpkg-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Cartesi Machine Emulator
+RUN curl -fsSL \
+    "https://github.com/cartesi/machine-emulator/releases/download/v${CARTESI_MACHINE_VERSION}/cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb" \
+    -o /tmp/cartesi-machine.deb \
+    && dpkg -i /tmp/cartesi-machine.deb \
+    && rm /tmp/cartesi-machine.deb
+
+# Download rollups-node at v2.0.0-alpha.2 via ADD
+ADD https://github.com/cartesi/rollups-node.git#v2.0.0-alpha.2 /opt/rollups-node
+WORKDIR /opt/rollups-node
+
+# Migrate DB schema and generate bindings
+RUN eval $(make env) \
+    && make migrate \
+    && make generate-db
+
+# Install Foundry toolchain
+RUN curl -L https://foundry.paradigm.xyz | bash \
+    && foundryup
+
+# Runtime image
+FROM ubuntu:24.04
+ARG TARGETARCH
+
+# Copy Cartesi Machine runtime dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    libboost-all-dev lua5.4 libslirp0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy built rollups-node from builder
+COPY --from=builder /opt/rollups-node /opt/rollups-node
+COPY --from=builder /usr/bin/cartesi-machine /usr/bin/
+COPY --from=builder /root/.foundry/bin/foundryup /usr/bin/
+
+WORKDIR /opt/rollups-node
+
+EXPOSE 8545
+CMD ["sh", "-c", "make devnet && make start-devnet"]

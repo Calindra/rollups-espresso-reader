@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: rollupsdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+
+  rollups-node:
+    build:
+      context: .
+      dockerfile: Dockerfile.rollups-node
+      args:
+        TARGETARCH: amd64 # or "${TARGETARCH}" from env
+        CARTESI_MACHINE_VERSION: 0.19.0
+    container_name: rollups-node-devnet
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      CARTESI_DATABASE_CONNECTION: "postgres://postgres:password@postgres:5432/rollupsdb?sslmode=disable"
+    ports:
+      - "8545:8545"
+    command: ["sh", "-c", "make devnet && make start-devnet"]
+
+  espresso:
+    build:
+      context: .
+      dockerfile: ci/Dockerfile
+      args:
+        TARGETARCH: amd64
+    container_name: espresso
+    depends_on:
+      - postgres
+      - rollups-node
+    environment:
+      CARTESI_DATABASE_CONNECTION: "postgres://postgres:password@postgres:5432/rollupsdb?sslmode=disable"
+      # other ESPRESSO_* env vars can be here or via env_file
+    ports:
+      - "24000:24000"
+      - "8080:8080"
+
+volumes:
+  pgdata:
