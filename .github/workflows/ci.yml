@@ -45,7 +45,7 @@ jobs:
 
       - name: Install go migrate cli
         run: |
-          GO_MIGRATE_VERSION=4.18.2
+          GO_MIGRATE_VERSION=4.18.3
           ARCH=$(dpkg --print-architecture || uname -m)
           case "$ARCH" in
               amd64|x86_64)
