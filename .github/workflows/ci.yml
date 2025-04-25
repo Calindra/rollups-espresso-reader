@@ -13,7 +13,7 @@ jobs:
       CARTESI_DATABASE_CONNECTION: 'postgres://postgres:password@localhost:5432/rollupsdb?sslmode=disable'
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17.4
         ports:
           - 5432:5432
         env:
@@ -75,7 +75,7 @@ jobs:
           cd rollups-node
           eval $(make env)
           make migrate
-      
+
       - name: Migrate Espresso DB
         run: |
           # migrate -source file://internal/repository/postgres/schema/migrations -database "$CARTESI_DATABASE_CONNECTION" up
@@ -87,12 +87,13 @@ jobs:
         run: |
           export TARGETARCH=amd64
           export CARTESI_MACHINE_VERSION=0.19.0
+          export CARTESI_MACHINE_FULL_VERSION=0.19.0-alpha3
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev lua5.4 libslirp0
-          curl -LO https://github.com/cartesi/machine-emulator/releases/download/v0.19.0-alpha3/cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
+          curl -LO https://github.com/cartesi/machine-emulator/releases/download/v${CARTESI_MACHINE_FULL_VERSION}/cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
           sudo dpkg -i ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
           rm ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
-      
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
@@ -101,7 +102,7 @@ jobs:
           cd rollups-node
           make devnet
           make start-devnet
-      
+
       - name: Build Espresso image
         run: |
           docker build --build-arg TARGETARCH=amd64 -t espresso -f ./ci/Dockerfile .
@@ -126,13 +127,13 @@ jobs:
         with:
           name: docker-images
           path: docker-*
-  
+
       - name: Upload database dump
         uses: actions/upload-artifact@v4
         with:
           name: db-dump
           path: rollupsdb-*
-  
+
   local_e2e_test:
     name: e2e tests (Espresso Local)
     runs-on: ubuntu-latest
@@ -148,7 +149,7 @@ jobs:
           POSTGRES_PASSWORD: password
           POSTGRES_DB: rollupsdb
         options: --name postgres
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -177,7 +178,7 @@ jobs:
           done;
           echo "PostgreSQL did not become ready in time";
           exit 1;
-  
+
       - name: Restore database
         env:
           PGPASSWORD: password
@@ -188,16 +189,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: docker-images
-  
+
       - name: Load Docker image
         run: |
           docker load -i docker-devnet-image.tar
           docker load -i docker-espresso-image.tar
-      
+
       - name: Run devnet (Anvil)
         run: |
           docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
-      
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
@@ -222,7 +223,7 @@ jobs:
             -e ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL=1s \
             -e ESPRESSO_STATE_PROVER_UPDATE_INTERVAL=1s \
             --name espresso-dev-node ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
-      
+
       - name: Wait for a while
         run: sleep 15
 
@@ -330,7 +331,7 @@ jobs:
           done;
           echo "PostgreSQL did not become ready in time";
           exit 1;
-  
+
       - name: Restore database
         env:
           PGPASSWORD: password
@@ -341,12 +342,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: docker-images
-  
+
       - name: Load Docker image
         run: |
           docker load -i docker-devnet-image.tar
           docker load -i docker-espresso-image.tar
-      
+
       - name: Run devnet (Anvil)
         run: |
           docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
@@ -444,11 +445,11 @@ jobs:
         run: |
           docker load -i docker-devnet-image.tar
           docker load -i docker-espresso-image.tar
-      
+
       - name: Run devnet (Anvil)
         run: |
           docker run --rm --name devnet -p 8545:8545 -d cartesi/rollups-node-devnet:devel
-  
+
       - name: Wait for PostgreSQL to be ready
         run: |
           for i in {1..30}; do
