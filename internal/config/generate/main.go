@@ -12,8 +12,17 @@
 // names, and the keys of the inner map being variable names.
 package main
 
+import (
+	_ "embed"
+
+	"golang.org/x/exp/slog"
+)
+
+//go:embed Config.toml
+var data string
+
 func main() {
-	data := readTOML("Config.toml")
+	slog.Info("Generating config files...")
 	config := decodeTOML(data)
 	envs := sortConfig(config)
 	for _, env := range envs {
