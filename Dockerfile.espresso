@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install build dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    git build-essential golang curl postgresql-client dpkg ca-certificates \
+    git build-essential golang curl postgresql-client ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace

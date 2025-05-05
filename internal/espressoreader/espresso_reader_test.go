@@ -33,7 +33,8 @@ import (
 type EspressoReaderTestSuite struct {
 	suite.Suite
 	ctx           context.Context
-	c             config.NodeConfig
+	ctxCancel     context.CancelFunc
+	nodeConfig    config.NodeConfig
 	database      repository.Repository
 	application   model.Application
 	senderAddress string
@@ -88,7 +89,8 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 	consensusAddress := "0x1d76BDB32803AE72fc5aed528779B3f581f93FED"
 	inputboxAddress := "0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c"
 	templatePath := "applications/echo-dapp/"
-	templateHash := "0x2fa07a837075faedd5be6215cef05e90848d01fd752e2f41b6039f3317bee84d" // templateHash := "0x1611c2f376328c21520ff4d521eb43d6ca581a5d51eab19e3c354f71ff4bdeae"
+	templateHash := "0x2fa07a837075faedd5be6215cef05e90848d01fd752e2f41b6039f3317bee84d"
+	// templateHash := "0x1611c2f376328c21520ff4d521eb43d6ca581a5d51eab19e3c354f71ff4bdeae"
 	suite.application = model.Application{
 		Name:                 "test-dapp",
 		IApplicationAddress:  common.HexToAddress(appAddress),
@@ -103,42 +105,62 @@ func (suite *EspressoReaderTestSuite) SetupSuite() {
 		DataAvailability:     model.DataAvailability_InputBoxAndEspresso,
 	}
 	suite.senderAddress = common.HexToAddress("0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266").String()
+}
 
-	suite.ctx = context.Background()
-	suite.c = config.FromEnv()
-	suite.database, _ = factory.NewRepositoryFromConnectionString(suite.ctx, suite.c.PostgresEndpoint.Value)
+func (suite *EspressoReaderTestSuite) SetupTest() {
+	suite.database, _ = factory.NewRepositoryFromConnectionString(suite.ctx, suite.nodeConfig.PostgresEndpoint.Value)
 	// _, err := suite.database.CreateApplication(suite.ctx, &suite.application)
 	// if err != nil {
-	// 	slog.Error("create application", "error", err)
+	// 	slog.ErrorContext(suite.ctx, "create application", "error", err)
 	// }
 	// suite.Nil(err)
 
+	suite.ctx, suite.ctxCancel = context.WithCancel(context.Background())
+	suite.nodeConfig = config.FromEnv()
+
 	config, err := repository.LoadNodeConfig[evmreader.PersistentConfig](suite.ctx, suite.database, evmreader.EvmReaderConfigKey)
-	if err != nil {
-		slog.Error("db config", "error", err)
-	}
-	slog.Debug("SetupSuite", "chainID", config.Value.ChainID)
+	suite.NoError(err, "error on db config")
+	slog.DebugContext(suite.ctx, "SetupSuite", "chainID", config.Value.ChainID)
 	suite.chainId = config.Value.ChainID
 
-	_, namespace, err := getEspressoConfig(suite.ctx, common.HexToAddress(appAddress), suite.database, suite.c.BlockchainHttpEndpoint.Value)
+	_, namespace, err := getEspressoConfig(suite.ctx, suite.application.IApplicationAddress, suite.database, suite.nodeConfig.BlockchainHttpEndpoint.Value)
 	suite.Nil(err)
 
-	err = suite.prepareTxs(suite.ctx, suite.c.EspressoBaseUrl, namespace, suite.c.BlockchainHttpEndpoint.Value)
+	err = suite.prepareTxs(suite.ctx, suite.nodeConfig.EspressoBaseUrl, namespace, suite.nodeConfig.BlockchainHttpEndpoint.Value)
 	suite.Nil(err)
 
 	service := NewEspressoReaderService(
-		suite.c.BlockchainHttpEndpoint.Value,
-		suite.c.BlockchainWsEndpoint.Value,
+		suite.nodeConfig.BlockchainHttpEndpoint.Value,
+		suite.nodeConfig.BlockchainWsEndpoint.Value,
 		suite.database,
-		suite.c.EspressoBaseUrl,
+		suite.nodeConfig.EspressoBaseUrl,
 		config.Value.ChainID,
-		suite.c.EspressoServiceEndpoint,
-		suite.c.MaxRetries,
-		suite.c.MaxDelay,
+		suite.nodeConfig.EspressoServiceEndpoint,
+		suite.nodeConfig.MaxRetries,
+		suite.nodeConfig.MaxDelay,
 	)
-	go service.Start(suite.ctx, make(chan struct{}, 1))
-	// let reader run for some time
-	time.Sleep(10 * time.Second)
+	ready := make(chan struct{})
+	errCh := make(chan error)
+	go func() {
+		errCh <- service.Start(suite.ctx, ready)
+	}()
+
+	select {
+	case <-suite.ctx.Done():
+		suite.NoError(suite.ctx.Err(), "context cancelled")
+	case errSrv := <-errCh:
+		suite.NoError(errSrv, "error starting espresso reader")
+	case <-ready:
+		slog.InfoContext(suite.ctx, "espresso reader is ready")
+	case <-time.After(10 * time.Second):
+		defer suite.ctxCancel()
+		suite.Fail("timeout waiting for espresso reader to be ready")
+	}
+}
+
+func (suite *EspressoReaderTestSuite) TearDownTest() {
+	suite.ctxCancel()
+	suite.database.Close()
 }
 
 func (suite *EspressoReaderTestSuite) TestInputs() {
