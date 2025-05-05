@@ -20,6 +20,7 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/tyler-smith/go-bip32 v1.0.0
 	github.com/tyler-smith/go-bip39 v1.1.0
+	golang.org/x/exp v0.0.0-20241215155358-4a5509556b9e
 	golang.org/x/text v0.24.0
 )
 
@@ -113,7 +114,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
-	golang.org/x/exp v0.0.0-20241215155358-4a5509556b9e // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	google.golang.org/grpc v1.70.0 // indirect
