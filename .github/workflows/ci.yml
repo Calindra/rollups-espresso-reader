@@ -270,7 +270,7 @@ jobs:
           APP_ADDRESS: "0x01e800bbE852aeb27cE65604709134Ea63782c6B"
           INPUT: "0xdeadbeefdeadbeef"
         run: |
-          npm ci
+          npm i
           node index.js || true
           sleep 10
           docker logs --timestamps c_espresso
