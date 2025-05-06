@@ -115,7 +115,7 @@ jobs:
         env:
           PGPASSWORD: password
         run: |
-          docker exec --env PGPASSWORD=${PGPASSWORD} -i postgres pg_dump -U postgres -d rollupsdb --no-owner --no-privileges --no-comments --no-acl > rollupsdb-dump.sql
+          docker exec --env PGPASSWORD=${PGPASSWORD} -i postgres pg_dump -U postgres -d rollupsdb --no-owner --no-privileges --no-comments > rollupsdb-dump.sql
 
       - name: Save Docker image
         run: |
