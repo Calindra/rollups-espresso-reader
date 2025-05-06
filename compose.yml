@@ -7,6 +7,8 @@ services:
       POSTGRES_DB: rollupsdb
     ports:
       - 5433:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test:
         [
@@ -35,22 +37,38 @@ services:
           "-U",
           "$${POSTGRES_USER}",
         ]
-  migrate:
+  # migrate:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.db
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: rollupsdb
+  #     DB_SERVICE_NAME: db
+  #     SKIP_GEN_MIGRATIONS: false
+  #     KEEP_RUNNING: true
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+
+  devnet:
     build:
       context: .
-      dockerfile: Dockerfile.db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: rollupsdb
-      DB_SERVICE_NAME: db
-      SKIP_GEN_MIGRATIONS: false
-      KEEP_RUNNING: true
+      dockerfile: Dockerfile.rollups-node
+      args:
+        TARGETARCH: amd64 # or "${TARGETARCH}" from env
+        CARTESI_MACHINE_VERSION: 0.19.0
+        CARTESI_MACHINE_FULL_VERSION: 0.19.0-alpha3
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      CARTESI_DATABASE_CONNECTION: "postgres://postgres:password@postgres:5432/rollupsdb?sslmode=disable"
+    ports:
+      - "8545:8545"
+    command: ["sh", "-c", "make devnet && make start-devnet"]
   # devnet:
-  #   container_name: devnet
   #   build:
   #     context: ./rollups-node/test/devnet
   #     dockerfile: Dockerfile
@@ -59,36 +77,38 @@ services:
   #   volumes:
   #     - ./rollups-node/deployment.json:/usr/share/devnet/deployment.json
   #     - ./rollups-node/anvil_state.json:/usr/share/devnet/anvil_state.json
-  # espresso-dev-node:
-  #   image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
-  #   environment:
-  #     ESPRESSO_SEQUENCER_L1_PROVIDER: http://devnet:8545/
-  #     ESPRESSO_SEQUENCER_API_PORT: 24000
-  #     ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL: 1s
-  #     ESPRESSO_STATE_PROVER_UPDATE_INTERVAL: 1s
-  #     ESPRESSO_SEQUENCER_POSTGRES_HOST: db-espresso
-  #     ESPRESSO_SEQUENCER_POSTGRES_PORT: 5432
-  #     ESPRESSO_SEQUENCER_POSTGRES_DATABASE: rollupsdb
-  #     ESPRESSO_SEQUENCER_POSTGRES_USER: postgres
-  #     ESPRESSO_SEQUENCER_POSTGRES_PASSWORD: password
-  #   depends_on:
-  #     - db-espresso
-  #     - devnet
-  #   ports:
-  #     - 24000:24000
-  # c_espresso:
-  #   container_name: c_espresso
-  #   build:
-  #     context: .
-  #     dockerfile: ./ci/Dockerfile
-  #   env_file:
-  #     - ./ci/env.nodev2-espressolocal
-  #   ports:
-  #     - 10000:10000
-  #   environment:
-  #     CARTESI_DATABASE_CONNECTION: postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
-  #     CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: http://devnet:8545/
-  #     CARTESI_BLOCKCHAIN_WS_ENDPOINT: ws://devnet:8545/
-  #     ESPRESSO_BASE_URL: http://espresso-dev-node:24000
-  #   depends_on:
-  #     - espresso-dev-node
+  espresso-dev-node:
+    image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20241120-patch6
+    environment:
+      ESPRESSO_SEQUENCER_L1_PROVIDER: http://devnet:8545/
+      ESPRESSO_SEQUENCER_API_PORT: 24000
+      ESPRESSO_SEQUENCER_L1_POLLING_INTERVAL: 1s
+      ESPRESSO_STATE_PROVER_UPDATE_INTERVAL: 1s
+      ESPRESSO_SEQUENCER_POSTGRES_HOST: db-espresso
+      ESPRESSO_SEQUENCER_POSTGRES_PORT: 5432
+      ESPRESSO_SEQUENCER_POSTGRES_DATABASE: rollupsdb
+      ESPRESSO_SEQUENCER_POSTGRES_USER: postgres
+      ESPRESSO_SEQUENCER_POSTGRES_PASSWORD: password
+    depends_on:
+      - db-espresso
+      - devnet
+    ports:
+      - 24000:24000
+  c_espresso:
+    container_name: c_espresso
+    build:
+      context: .
+      dockerfile: ./ci/Dockerfile
+    env_file:
+      - ./ci/env.nodev2-espressolocal
+    ports:
+      - 10000:10000
+    environment:
+      CARTESI_DATABASE_CONNECTION: postgres://postgres:password@db:5432/rollupsdb?sslmode=disable
+      CARTESI_BLOCKCHAIN_HTTP_ENDPOINT: http://devnet:8545/
+      CARTESI_BLOCKCHAIN_WS_ENDPOINT: ws://devnet:8545/
+      ESPRESSO_BASE_URL: http://espresso-dev-node:24000
+    depends_on:
+      - espresso-dev-node
+volumes:
+  pgdata:
