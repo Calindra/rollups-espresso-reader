@@ -34,6 +34,7 @@ jobs:
           repository: cartesi/rollups-node
           ref: v2.0.0-alpha.2
           submodules: false
+          path: ./rollups-node
 
       - name: Wait for PostgreSQL to be ready
         run: |
@@ -259,6 +260,7 @@ jobs:
         with:
           repository: Calindra/nonodo
           submodules: recursive
+          path: ./nonodo
 
       - name: Send input transaction
         working-directory: nonodo/eip712-client-js
