@@ -75,7 +75,7 @@ jobs:
           migrate --version
 
       - name: Migrate Node V2 DB
-        working-directory: rollups-node
+        working-directory: ./rollups-node
         run: |
           eval $(make env)
           make migrate
