@@ -59,7 +59,8 @@ services:
       args:
         TARGETARCH: amd64 # or "${TARGETARCH}" from env
         CARTESI_MACHINE_VERSION: 0.19.0
-        CARTESI_MACHINE_FULL_VERSION: 0.19.0-alpha3
+        CARTESI_MACHINE_FULL_VERSION: 0.19.0-alpha4
+        CARTESI_ROLLUPS_NODE_VERSION: 2.0.0-alpha.4
     depends_on:
       db:
         condition: service_healthy
@@ -98,7 +99,7 @@ services:
     container_name: c_espresso
     build:
       context: .
-      dockerfile: ./ci/Dockerfile
+      dockerfile: ./Dockerfile.espresso
     env_file:
       - ./ci/env.nodev2-espressolocal
     ports:

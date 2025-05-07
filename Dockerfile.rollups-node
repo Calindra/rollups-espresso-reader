@@ -1,12 +1,14 @@
 # Build stage for rollups-node-devnet
 ARG TARGETARCH=amd64
 ARG CARTESI_MACHINE_VERSION=0.19.0
-ARG CARTESI_MACHINE_FULL_VERSION=0.19.0-alpha3
-FROM ubuntu:24.04 AS builder
+ARG CARTESI_MACHINE_FULL_VERSION=0.19.0-alpha4
+ARG CARTESI_ROLLUPS_NODE_VERSION=2.0.0-alpha.4
+FROM golang:1.24.1-bookworm AS builder
 
 ARG TARGETARCH
 ARG CARTESI_MACHINE_VERSION
 ARG CARTESI_MACHINE_FULL_VERSION
+ARG CARTESI_ROLLUPS_NODE_VERSION
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -14,39 +16,43 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN <<EOF
     apt-get update
     apt-get install -y --no-install-recommends \
-    build-essential libboost-all-dev lua5.4 libslirp0 golang
+    build-essential libboost-all-dev lua5.4 libslirp0 ca-certificates
     rm -rfv /var/lib/apt/lists/*
 EOF
 
 # Install Cartesi Machine Emulator
-ADD "https://github.com/cartesi/machine-emulator/releases/download/v${CARTESI_MACHINE_FULL_VERSION}/cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb" /tmp/cartesi-machine.deb
+# ADD "https://github.com/cartesi/machine-emulator/releases/download/v${CARTESI_MACHINE_FULL_VERSION}/cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb" /tmp/cartesi-machine.deb
+ADD "https://github.com/cartesi/machine-emulator/releases/download/v${CARTESI_MACHINE_FULL_VERSION}/machine-emulator_${TARGETARCH}.deb" /tmp/cartesi-machine.deb
 
 
-RUN dpkg -i /tmp/cartesi-machine.deb \
+RUN apt-get install -y /tmp/cartesi-machine.deb \
     && rm /tmp/cartesi-machine.deb
 
 # Download rollups-node via ADD
-ADD https://github.com/cartesi/rollups-node.git#v2.0.0-alpha.2 /opt/rollups-node
+ADD https://github.com/cartesi/rollups-node.git#v${CARTESI_ROLLUPS_NODE_VERSION} /opt/rollups-node
 WORKDIR /opt/rollups-node
-
-# Migrate DB schema and generate bindings
-RUN eval $(make env) \
-    && make migrate \
-    && make generate-db
 
 # Install Foundry toolchain
 RUN curl -L https://foundry.paradigm.xyz | bash \
     && foundryup
 
+# Migrate DB schema and generate bindings
+RUN <<EOF
+    eval $(make env)
+    # make migrate
+    # make generate-db
+EOF
+
 # Runtime image
 FROM ubuntu:24.04
-ARG TARGETARCH
 
 # Copy Cartesi Machine runtime dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    libboost-all-dev lua5.4 libslirp0 \
-    && rm -rf /var/lib/apt/lists/*
+RUN <<EOF
+    apt-get update
+    apt-get install -y --no-install-recommends \
+    libboost-all-dev lua5.4 libslirp0
+    rm -rf /var/lib/apt/lists/*
+EOF
 
 # Copy built rollups-node from builder
 COPY --from=builder /opt/rollups-node /opt/rollups-node
