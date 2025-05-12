@@ -40,6 +40,16 @@ jobs:
         run: |
           docker compose up --wait
 
+      - name: Dump PostgreSQL DB from container
+        run: |
+          docker-compose exec -T db pg_dump -U postgres -d rollupsdb > rollupsdb-dump.sql
+
+      - name: Upload database dump
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-dump
+          path: rollupsdb-*
+
       - name: Deploy Echo Dapp
         env:
           ACCOUNT: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
