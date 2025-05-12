@@ -43,5 +43,3 @@ HEALTHCHECK --interval=1s --timeout=1s --retries=5 \
 	http://127.0.0.1:8545
 
 CMD ["anvil", "--base-fee", "0", "--block-time", "1", "--silent", "--host", "0.0.0.0", "--chain-id", "13370", "--load-state", "/usr/share/devnet/anvil_state.json"]
-
-FROM debian:bookworm-20250407 AS rollups-node-devnet
