@@ -7,84 +7,14 @@ ARG EMULATOR_VERSION=0.18.1
 # Build directories.
 ARG GO_BUILD_PATH=/build/cartesi/go
 
-FROM cartesi/machine-emulator:${EMULATOR_VERSION} AS common-env
-
-USER root
-
-# Re-declare ARGs so they can be used in the RUN block
-# ARG GO_BUILD_PATH
-
-# Install ca-certificates and curl (setup).
-# RUN <<EOF
-#     set -e
-#     apt-get update
-#     apt-get install -y --no-install-recommends ca-certificates curl wget build-essential pkg-config libssl-dev
-#     mkdir -p /opt/go ${GO_BUILD_PATH}/rollups-node
-#     chown -R cartesi:cartesi /opt/go ${GO_BUILD_PATH}
-# EOF
-
-# USER cartesi
-
-# =============================================================================
-# STAGE: go-installer
-#
-# This stage installs Go in the /opt directory.
-# =============================================================================
-
-# FROM common-env AS go-installer
-# # Download and verify Go based on the target architecture
-# RUN <<EOF
-#     set -e
-#     ARCH=$(dpkg --print-architecture)
-#     wget -O /tmp/go.tar.gz "https://go.dev/dl/go1.22.7.linux-${ARCH}.tar.gz"
-#     sha256sum /tmp/go.tar.gz
-#     case "$ARCH" in
-#         amd64) echo "fc5d49b7a5035f1f1b265c17aa86e9819e6dc9af8260ad61430ee7fbe27881bb  /tmp/go.tar.gz" | sha256sum --check ;;
-#         arm64) echo "ed695684438facbd7e0f286c30b7bc2411cfc605516d8127dc25c62fe5b03885  /tmp/go.tar.gz" | sha256sum --check ;;
-#         *) echo "unsupported architecture: $ARCH"; exit 1 ;;
-#     esac
-#     tar -C /opt -xzf /tmp/go.tar.gz
-#     rm /tmp/go.tar.gz
-# EOF
-
-# Set up Go environment variables
-# ENV PATH="/opt/go/bin:$PATH"
-
-# =============================================================================
-# STAGE: go-prepare
-#
-# This stage prepares the Go build environment. It downloads the external
-# =============================================================================
-
-# FROM go-installer AS go-prepare
-
-# ARG GO_BUILD_PATH
-# WORKDIR ${GO_BUILD_PATH}
-
-# ENV GOCACHE=${GO_BUILD_PATH}/.cache
-# ENV GOENV=${GO_BUILD_PATH}/.config/go/env
-# ENV GOPATH=${GO_BUILD_PATH}/.go
-
-# =============================================================================
-# STAGE: go-builder
-#
-# This stage builds the node Go binaries. First it downloads the external
-# dependencies and then it builds the binaries.
-# =============================================================================
-
-# FROM go-prepare AS go-builder
-
-# ARG GO_BUILD_PATH
-
-# COPY --chown=cartesi:cartesi . ${GO_BUILD_PATH}/
-
-# # Build espresso reader.
-# RUN go build -o cartesi-rollups-espresso-reader
-
 FROM golang:1.23.2 AS go-builder
+
+ARG GO_BUILD_PATH
 
 WORKDIR ${GO_BUILD_PATH}
 COPY . .
+
+# Build espresso reader.
 RUN go build -o cartesi-rollups-espresso-reader
 
 # =============================================================================
@@ -124,6 +54,7 @@ EOF
 ARG GO_BUILD_PATH
 
 # Install cartesi machine
+WORKDIR /tmp
 ENV CARTESI_MACHINE_VERSION=0.19.0
 ENV CARTESI_MACHINE_SUFFIX="-alpha3"
 RUN <<EOF
@@ -134,9 +65,28 @@ RUN <<EOF
     rm ./cartesi-machine-v${CARTESI_MACHINE_VERSION}_${TARGETARCH}.deb
 EOF
 
-ADD --checksum=sha512:e4663365ea565792110129a6b479eca896cb31c23f561cb42214609588689f9d3d173a82b4ea27ff74ae05334747cc76ed6bc4c200a7499ac5134abfd2b3045e https://github.com/cartesi/image-kernel/releases/download/v0.20.0/linux-6.5.13-ctsi-1-v0.20.0.bin /usr/share/cartesi-machine/images/linux.bin
+# Copy kernel and root filesystem images with their SHA512 checksums
+ADD --chmod=644 https://github.com/cartesi/image-kernel/releases/download/v0.20.0/linux-6.5.13-ctsi-1-v0.20.0.bin /tmp/artifacts/linux-6.5.13-ctsi-1-v0.20.0.bin
+ADD --chmod=644 https://github.com/cartesi/image-kernel/releases/download/v0.20.0/linux-6.5.13-ctsi-1-v0.20.0.bin.sha512 /tmp/linux-6.5.13-ctsi-1-v0.20.0.bin.sha512
+ADD --chmod=644 https://github.com/cartesi/machine-emulator-tools/releases/download/v0.16.1/rootfs-tools-v0.16.1.ext2 /tmp/rootfs-tools-v0.16.1.ext2
+ADD --chmod=644 https://github.com/cartesi/machine-emulator-tools/releases/download/v0.16.1/rootfs-tools-v0.16.1.ext2.sha512 /tmp/rootfs-tools-v0.16.1.ext2.sha512
 
-ADD --checksum=sha512:9d3d582cfbaa17c749ef03b2ca61c583bae1f4b50dd5f50003faf29730469a955dfb7964a619aa22870c842b77d07e1ebc2b50d7bb0c8c65af4df3efa24b73da https://github.com/cartesi/machine-emulator-tools/releases/download/v0.16.1/rootfs-tools-v0.16.1.ext2 /usr/share/cartesi-machine/images/rootfs.ext2
+# Verify the downloaded files
+WORKDIR /tmp
+RUN <<EOF
+    set -e
+    sha512sum --check \
+        rootfs-tools-v0.16.1.ext2.sha512 \
+        linux-6.5.13-ctsi-1-v0.20.0.bin.sha512
+EOF
+
+# Copy kernel and root filesystem images to the appropriate directory
+RUN <<EOF
+    set -e
+    mkdir -pv /usr/share/cartesi-machine/images
+    mv -v /tmp/artifacts/linux-6.5.13-ctsi-1-v0.20.0.bin /usr/share/cartesi-machine/images/linux.bin
+    mv -v /tmp/rootfs-tools-v0.16.1.ext2 /usr/share/cartesi-machine/images/rootfs.ext2
+EOF
 
 # Install rollups node
 ARG ROLLUPS_NODE_VERSION
