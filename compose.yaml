@@ -18,13 +18,34 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8545:8545
+    volumes:
+      - ./dump:/dump
+
+  sequencer-db-0:
+    image: postgres
+    user: root
+    ports:
+      - "$ESPRESSO_SEQUENCER0_DB_PORT:5432"
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=root
+      - POSTGRES_DB=sequencer
+    healthcheck:
+      # Postgres can be falsely "ready" once before running init scripts.
+      # See https://github.com/docker-library/postgres/issues/146 for discussion.
+      test: "pg_isready -U root -d sequencer && sleep 1 && pg_isready -U root -d sequencer"
+      interval: 5s
+      timeout: 4s
+      retries: 20
+
   espresso-dev-node:
-    image: ghcr.io/espressosystems/espresso-sequencer/espresso-dev-node:20250428-dev-node-decaf-pos
+    image: ghcr.io/calindra/espresso-dev-node:ctsi
     ports:
       - 24000:24000
       - 23000:23000
       - 20000:20000
-      # - 5433:5432
+    env_file:
+      - "${ESPRESSO_ENV_FILE:-./ci/espresso.env}"
     environment:
       - ESPRESSO_BUILDER_PORT=23000
       - ESPRESSO_DEPLOYER_ACCOUNT_INDEX
@@ -32,8 +53,12 @@ services:
       - ESPRESSO_SEQUENCER_API_PORT=24000
       - ESPRESSO_SEQUENCER_ETH_MNEMONIC
       - ESPRESSO_SEQUENCER_L1_PROVIDER=http://host.docker.internal:8545
-      - ESPRESSO_SEQUENCER_DATABASE_MAX_CONNECTIONS=25
-      - ESPRESSO_SEQUENCER_STORAGE_PATH=/data/espresso
+      - ESPRESSO_SEQUENCER_POSTGRES_HOST=sequencer-db-0
+      - ESPRESSO_SEQUENCER_POSTGRES_USER=root
+      - ESPRESSO_SEQUENCER_POSTGRES_PASSWORD=password
+      - ESPRESSO_SEQUENCER_POSTGRES_DATABASE=sequencer
+      # - ESPRESSO_SEQUENCER_DATABASE_MAX_CONNECTIONS=25
+      # - ESPRESSO_SEQUENCER_STORAGE_PATH=/data/espresso
       - RUST_LOG=info
       - RUST_LOG_FORMAT
     volumes:

@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+docker compose exec cartesi_node_espresso cartesi-rollups-cli app deploy -n echo-dapp01 -t applications/echo-dapp/ -v -D 0x8579fd0c000000000000000000000000b6b39fb3dd926a9e3fbc7a129540eebea3016a6c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903 --salt 0000000000000000000000000000000000000000000000000000000000000000
+# docker compose exec cartesi_node_espresso cartesi-rollups-cli app deploy -n echo-dapp02 -t applications/echo-dapp/ -v -D 0x8579fd0c000000000000000000000000b6b39fb3dd926a9e3fbc7a129540eebea3016a6c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d903 --salt 0000000000000000000000000000000000000000000000000000000000000001
+
+INPUT=0xdead01beef; \
+INPUT_BOX_ADDRESS=0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c; \
+APPLICATION_ADDRESS=0x01e800bbE852aeb27cE65604709134Ea63782c6B; \
+cast send \
+    --mnemonic "test test test test test test test test test test test junk" \
+    --rpc-url "http://localhost:8545" \
+    $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
+
+# INPUT=0xdead02beef; \
+# INPUT_BOX_ADDRESS=0xB6b39Fb3dD926A9e3FBc7A129540eEbeA3016a6c; \
+# APPLICATION_ADDRESS=0x154E3997c4CF3Fda877a0A884A04F9eEf65B2346; \
+# cast send \
+#     --mnemonic "test test test test test test test test test test test junk" \
+#     --rpc-url "http://localhost:8545" \
+#     $INPUT_BOX_ADDRESS "addInput(address,bytes)(bytes32)" $APPLICATION_ADDRESS $INPUT
+

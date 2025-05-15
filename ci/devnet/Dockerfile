@@ -55,4 +55,8 @@ HEALTHCHECK --interval=1s --timeout=1s --retries=5 \
 	-d '{"jsonrpc":"2.0","id":"1","method":"net_listening","params":[]}' \
 	http://127.0.0.1:8545
 
-CMD ["anvil", "--base-fee", "0", "--block-time", "1", "--silent", "--host", "0.0.0.0", "--chain-id", "13370", "--load-state", "/usr/share/devnet/anvil_state.json"]
+COPY ./start.sh ./start.sh
+# COPY ./anvil_state.json /usr/share/devnet/anvil_state.json
+RUN chmod +x ./start.sh
+# CMD ["anvil", "--base-fee", "0", "--block-time", "1", "--silent", "--host", "0.0.0.0", "--chain-id", "13370", "--load-state", "/usr/share/devnet/anvil_state.json"]
+CMD ["./start.sh"]
