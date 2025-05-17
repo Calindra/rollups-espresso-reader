@@ -36,16 +36,6 @@ jobs:
           mkdir -p target/$TARGETARCH/release
           cp target/release/espresso-dev-node target/$TARGETARCH/release/espresso-dev-node
 
-      # - name: Docker build espresso dev node
-      #   run: |
-      #     cd espresso-network
-      #     ls -la target/release
-      #     docker buildx build \
-      #       --build-arg TARGETARCH=${TARGETARCH} \
-      #       --file ./docker/espresso-dev-node.Dockerfile \
-      #       --output type=docker,dest=/home/runner/work/_temp/espresso-dev-node.tar \
-      #       --tag espresso-dev-node:ctsi .
-
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -65,8 +55,6 @@ jobs:
           context: ./espresso-network
           file: ./espresso-network/docker/espresso-dev-node.Dockerfile
           push: true
-          repository: calindra/espresso-dev-node
-          registry: ghcr.io
           build-args: |
             TARGETARCH=amd64
           tags: |

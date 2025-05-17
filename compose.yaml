@@ -45,7 +45,7 @@ services:
       - 23000:23000
       - 20000:20000
     env_file:
-      - "${ESPRESSO_ENV_FILE:-./ci/espresso.env}"
+      - "${ESPRESSO_ENV_FILE:-./ci/espresso-skip.env}"
     environment:
       - ESPRESSO_BUILDER_PORT=23000
       - ESPRESSO_DEPLOYER_ACCOUNT_INDEX
